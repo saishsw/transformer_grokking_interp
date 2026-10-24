@@ -11,10 +11,10 @@ class ModularAdditionDataset(Dataset):
     def __len__(self):
         return len(self.pairs)
 
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         a, b = self.pairs[idx]
         input_token = torch.tensor([a, b, config.EQUALS_TOKEN], dtype=torch.long)
-        label = torch.tensor([a + b % config.P], dtype=torch.long)
+        label = torch.tensor(((a + b) % config.P), dtype=torch.long)
         return input_token, label
 
 def get_dataloaders():
@@ -57,29 +57,25 @@ if __name__ == "__main__":
     print(f"Train examples: {len(train_loader.dataset)}  |  Test examples: {len(test_loader.dataset)}")
     print(f"Train batches: {len(train_loader)}  |  Test batches: {len(test_loader)}")
  
-    # Pull one batch and verify shapes match what we derived by hand in B1/B2.
     input_tokens, labels = next(iter(train_loader))
     print(f"\nInput tokens batch shape: {input_tokens.shape}   (expected: [batch_size, 3])")
     print(f"Labels batch shape:       {labels.shape}          (expected: [batch_size])")
     print(f"Input dtype: {input_tokens.dtype}  |  Label dtype: {labels.dtype}")
  
-    # Inspect one real example directly, and verify the arithmetic by hand.
     example_input = input_tokens[0].tolist()
     example_label = labels[0].item()
     a, b, eq = example_input
     print(f"\nExample: a={a}, b={b}, equals_token={eq} (expected {config.EQUALS_TOKEN})")
     print(f"Label: {example_label}  |  Manually computed (a+b)%P: {(a + b) % config.P}")
     assert example_label == (a + b) % config.P, "Label doesn't match manual computation!"
- 
-    # Verify the HELD-OUT property: confirm zero overlap between train and
-    # test pairs -- this is the property Phase B3 was entirely about, and
-    # we should never just assume it worked, same discipline as verifying
-    # the label-9 gap in the CNN project.
+    print(f"a={a}, b={b}, example_label={example_label}, expected={(a + b) % config.P}")
+
+
     train_set = set(train_loader.dataset.pairs)
     test_set = set(test_loader.dataset.pairs)
-    overlap = train_set & test_set  # set intersection
+    overlap = train_set & test_set  
     print(f"\nOverlap between train and test pairs: {len(overlap)}  (expected: 0)")
     assert len(overlap) == 0, "Train/test leakage detected!"
  
-    print("\n✅ All checks passed.")
+    print("\n All checks passed.")
 
